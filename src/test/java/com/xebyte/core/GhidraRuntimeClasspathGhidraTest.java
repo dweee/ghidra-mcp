@@ -53,6 +53,7 @@ public class GhidraRuntimeClasspathGhidraTest {
         { "org.apache.logging.log4j.core.Logger", "ghidra.program.util.DefaultLanguageService" },
         { "com.google.common.collect.BiMap", "ghidra.app.plugin.processors.sleigh.SleighLanguage" },
         { "org.apache.commons.lang3.ArrayUtils", "db.TableRecord" },
+        { "org.apache.commons.io.FilenameUtils", "ghidra.app.plugin.processors.sleigh.SleighLanguageFile" },
         { "org.apache.commons.collections4.IteratorUtils", "Ghidra listing iteration" },
         { "org.antlr.runtime.RecognitionException",
           "ghidra.app.plugin.processors.sleigh.SleighLanguageProvider" },
