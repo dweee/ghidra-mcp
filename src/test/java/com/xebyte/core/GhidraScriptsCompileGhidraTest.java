@@ -70,6 +70,12 @@ public class GhidraScriptsCompileGhidraTest {
         assertFalse("No jars under " + installDir + "/Ghidra -- GHIDRA_INSTALL_DIR does not"
             + " point at a Ghidra installation", classpath.isEmpty());
 
+        // Scripts may use the extension API as well as Ghidra's API (for example,
+        // FlakeyCompatibilitySmoke). Match the installed extension environment
+        // using the main classes compiled by this very test run.
+        classpath.add(new File(com.xebyte.core.ServiceUtils.class.getProtectionDomain()
+            .getCodeSource().getLocation().toURI()));
+
         Path scriptsDir = ProjectSource.path("ghidra_scripts");
         assertTrue("ghidra_scripts/ not found at " + scriptsDir, Files.isDirectory(scriptsDir));
         List<File> scripts = listFiles(scriptsDir, ".java");

@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "ghidra-sdk": {
+      "locked": {
+        "lastModified": 1793726008,
+        "narHash": "sha256-jQp1wKvbwWdLBASTXkSi/VYmDJ5AbBi1WvcMt9HWJC8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1d060086d60cb76a40cf37109f979d88a5bd6396",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1d060086d60cb76a40cf37109f979d88a5bd6396",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1793231753,
+        "narHash": "sha256-kp38D161fCLKWLbGUNoUHGuX9ii4ZVN2FAcKiOUBZOI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "40aa5a0e9ff16a78d4b5d5c39e72f0382cb44061",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "40aa5a0e9ff16a78d4b5d5c39e72f0382cb44061",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ghidra-sdk": "ghidra-sdk",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

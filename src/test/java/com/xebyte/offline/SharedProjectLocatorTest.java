@@ -92,18 +92,28 @@ public class SharedProjectLocatorTest extends TestCase {
     }
 
     public void testResolveProjectDirUsesDefaultUnderHome() {
-        SharedProjectLocator.Parsed p =
-                SharedProjectLocator.parseServerUrl("ghidra://127.0.0.1:13100/firmware-shared");
-        Path dir = SharedProjectLocator.resolveProjectDir(
-                p, null, SecurityConfig.getInstance());
-        assertTrue(dir.isAbsolute());
-        assertEquals("127.0.0.1_13100_firmware-shared", dir.getFileName().toString());
-        assertTrue(dir.toString().contains("ghidra-shared-projects"));
-        // No path element may start with '.': Ghidra 12.1.3's ProjectLocator
-        // rejects those outright, so a dotted default silently breaks every
-        // shared-project open on that version.
-        for (Path part : dir) {
-            assertFalse("dotted path element: " + part, part.toString().startsWith("."));
+        // Test the generated default suffix independently of the runner's home.
+        // Ghidra itself rejects dotted ancestors (e.g. a CI state directory),
+        // which are outside this locator's control. Resolution creates no files.
+        String previousHome = System.getProperty("user.home");
+        try {
+            System.setProperty("user.home", Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath()
+                .getRoot().resolve("ghidra-test-home").toString());
+            SharedProjectLocator.Parsed p =
+                    SharedProjectLocator.parseServerUrl("ghidra://127.0.0.1:13100/firmware-shared");
+            Path dir = SharedProjectLocator.resolveProjectDir(
+                    p, null, SecurityConfig.getInstance());
+            assertTrue(dir.isAbsolute());
+            assertEquals("127.0.0.1_13100_firmware-shared", dir.getFileName().toString());
+            assertTrue(dir.toString().contains("ghidra-shared-projects"));
+            // No path element may start with '.': Ghidra 12.1.3's ProjectLocator
+            // rejects those outright, so a dotted default silently breaks every
+            // shared-project open on that version.
+            for (Path part : dir) {
+                assertFalse("dotted path element: " + part, part.toString().startsWith("."));
+            }
+        } finally {
+            System.setProperty("user.home", previousHome);
         }
     }
 

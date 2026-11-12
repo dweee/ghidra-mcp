@@ -37,6 +37,7 @@ public class GhidraMCPPluginTest extends TestCase {
         if (!serverAvailabilityChecked) {
             serverAvailable = liveTestsEnabled() && checkServerAvailability();
             serverAvailabilityChecked = true;
+            if (liveTestsEnabled()) assertTrue("Requested live server is unavailable", serverAvailable);
             if (!serverAvailable) {
                 System.out.println("=== LIVE MCP SERVER TESTS DISABLED OR NOT AVAILABLE ===");
                 System.out.println("Integration tests will be skipped. To run these tests:");
@@ -64,13 +65,13 @@ public class GhidraMCPPluginTest extends TestCase {
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
                 HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/methods"))
+                    .uri(URI.create(BASE_URL + "/check_connection"))
                     .timeout(Duration.ofSeconds(1))
                     .GET()
                     .build();
                 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200 && response.body() != null && response.body().contains("5.8.0")) {
+                if (response.statusCode() == 200 && response.body() != null && response.body().contains("server_kind")) {
                     return true;
                 }
             } catch (Exception e) {
@@ -145,7 +146,7 @@ public class GhidraMCPPluginTest extends TestCase {
         } catch (Exception e) {
             // Check if this is a connectivity issue
             String errorMsg = e.getMessage();
-            if (errorMsg != null && (errorMsg.contains("HTTP/1.1 header parser received no bytes") ||
+            if (!liveTestsEnabled() && errorMsg != null && (errorMsg.contains("HTTP/1.1 header parser received no bytes") ||
                                    errorMsg.contains("Connection refused") ||
                                    errorMsg.contains("ConnectException") ||
                                    errorMsg.contains("SocketTimeoutException"))) {
@@ -163,7 +164,7 @@ public class GhidraMCPPluginTest extends TestCase {
      */
     public void testServerConnectivity() throws Exception {
         runIfServerAvailable("testServerConnectivity", () -> {
-            HttpResponse<String> response = makeGetRequest("methods");
+            HttpResponse<String> response = makeGetRequest("find_functions");
             assertTrue("Server should respond successfully", response.statusCode() == 200);
             assertNotNull("Response body should not be null", response.body());
         });
@@ -175,8 +176,8 @@ public class GhidraMCPPluginTest extends TestCase {
     public void testBasicListingEndpoints() throws Exception {
         runIfServerAvailable("testBasicListingEndpoints", () -> {
             String[] basicEndpoints = {
-                "list_functions", "methods", "classes", "segments",
-                "imports", "exports", "namespaces", "data", "strings"
+                "find_functions", "find_functions", "list_program_items?kind=classes", "list_program_items?kind=segments",
+                "list_program_items?kind=imports", "list_program_items?kind=exports", "list_program_items?kind=namespaces", "list_program_items?kind=data_items", "list_strings"
             };
 
             for (String endpoint : basicEndpoints) {
@@ -194,11 +195,11 @@ public class GhidraMCPPluginTest extends TestCase {
     public void testSearchEndpoints() throws Exception {
         if (!serverAvailable) return;
         // Test function search with a common term
-        HttpResponse<String> response = makeGetRequest("searchFunctions?query=get&limit=5");
+        HttpResponse<String> response = makeGetRequest("find_functions?query=get&limit=5");
         assertEquals("Function search should return 200", 200, response.statusCode());
 
         // Test with empty query (should handle gracefully)
-        response = makeGetRequest("searchFunctions?query=&limit=5");
+        response = makeGetRequest("find_functions?query=&limit=5");
         assertTrue("Empty search should return 200 or 400",
             response.statusCode() == 200 || response.statusCode() == 400);
     }
@@ -208,22 +209,10 @@ public class GhidraMCPPluginTest extends TestCase {
      */
     public void testDecompilationEndpoints() throws Exception {
         if (!serverAvailable) return;
-        // First get a function name to test with
-        HttpResponse<String> methodsResponse = makeGetRequest("methods?limit=1");
-        assertEquals("Methods endpoint should work", 200, methodsResponse.statusCode());
+        HttpResponse<String> response = makeGetRequest("get_functions?function=main");
+        assertEquals("Decompilation should return 200", 200, response.statusCode());
+        assertTrue("Expected real decompiled C", response.body().contains("decompiled_code"));
 
-        String methodsBody = methodsResponse.body();
-        if (!methodsBody.trim().isEmpty()) {
-            String[] lines = methodsBody.split("\n");
-            if (lines.length > 0) {
-                String firstMethod = lines[0].trim();
-
-                // Test decompilation
-                HttpResponse<String> decompileResponse = makePostRequest("decompile", firstMethod);
-                assertEquals("Decompile should return 200", 200, decompileResponse.statusCode());
-                assertNotNull("Decompile response should not be null", decompileResponse.body());
-            }
-        }
     }
 
     /**
@@ -233,8 +222,8 @@ public class GhidraMCPPluginTest extends TestCase {
         if (!serverAvailable) return;
         // Test with a known address format (these should at least not crash)
         String[] xrefEndpoints = {
-            "xrefs_to?address=0x034c1000&limit=5",
-            "xrefs_from?address=0x034c1000&limit=5"
+            "get_xrefs_to?address=0x034c1000&limit=5",
+            "get_xrefs_from?address=0x034c1000&limit=5"
         };
 
         for (String endpoint : xrefEndpoints) {
@@ -266,8 +255,8 @@ public class GhidraMCPPluginTest extends TestCase {
     public void testProblematicEndpoints() throws Exception {
         if (!serverAvailable) return;
         String[] problematicEndpoints = {
-            "all_labels", "program_stats", "find_byte_patterns",
-            "function_callgraph", "search_labels", "string_references"
+            "list_globals", "get_metadata", "search_byte_patterns",
+            "analyze_call_graph", "list_globals", "list_strings"
         };
 
         int workingCount = 0;
@@ -275,7 +264,7 @@ public class GhidraMCPPluginTest extends TestCase {
 
         for (String endpoint : problematicEndpoints) {
             try {
-                HttpResponse<String> response = makeGetRequest(endpoint + "?limit=5");
+                HttpResponse<String> response = makeGetRequest(endpoint + (endpoint.contains("?") ? "&" : "?") + "limit=5");
                 if (response.statusCode() == 200) {
                     workingCount++;
                     System.out.println("✓ " + endpoint + " is working");
@@ -293,7 +282,7 @@ public class GhidraMCPPluginTest extends TestCase {
 
         // This test documents the current state but doesn't fail if endpoints are missing
         // In a perfect world, all endpoints should work (workingCount == totalCount)
-        assertTrue("At least some problematic endpoints should be accessible", workingCount >= 0);
+        assertTrue("All current advanced endpoint fixtures should be accessible", workingCount == totalCount);
     }
 
     /**
@@ -302,17 +291,17 @@ public class GhidraMCPPluginTest extends TestCase {
     public void testParameterValidation() throws Exception {
         runIfServerAvailable("testParameterValidation", () -> {
             // Test invalid limit parameters
-            HttpResponse<String> response = makeGetRequest("methods?limit=-1");
+            HttpResponse<String> response = makeGetRequest("find_functions?limit=-1");
             assertTrue("Invalid limit should be handled gracefully",
                 response.statusCode() == 200 || response.statusCode() == 400);
 
             // Test invalid offset parameters
-            response = makeGetRequest("methods?offset=-5");
+            response = makeGetRequest("find_functions?offset=-5");
             assertTrue("Invalid offset should be handled gracefully",
                 response.statusCode() == 200 || response.statusCode() == 400);
 
             // Test very large limit (should be capped)
-            response = makeGetRequest("methods?limit=999999");
+            response = makeGetRequest("find_functions?limit=999999");
             assertEquals("Large limit should still return 200", 200, response.statusCode());
         });
     }
@@ -339,11 +328,10 @@ public class GhidraMCPPluginTest extends TestCase {
      */
     public void testHttpMethodValidation() throws Exception {
         if (!serverAvailable) return;
-        // Test GET on POST-only endpoints (like decompile)
-        HttpResponse<String> response = makeGetRequest("decompile");
-        // Should either work or return method not allowed
-        assertTrue("GET on decompile should handle appropriately",
-            response.statusCode() == 200 || response.statusCode() == 405 || response.statusCode() == 400);
+        // v7 consolidated decompilation into the documented GET query.
+        HttpResponse<String> response = makeGetRequest("get_functions?function=main");
+        assertEquals("The documented GET method should succeed", 200, response.statusCode());
+        assertTrue("GET must execute decompilation", response.body().contains("decompiled_code"));
     }
 
     /**
@@ -355,7 +343,7 @@ public class GhidraMCPPluginTest extends TestCase {
 
         // Make several quick requests
         for (int i = 0; i < 5; i++) {
-            HttpResponse<String> response = makeGetRequest("methods?limit=10");
+            HttpResponse<String> response = makeGetRequest("find_functions?limit=10");
             assertEquals("Performance test request " + i + " should succeed", 200, response.statusCode());
         }
 
@@ -372,11 +360,11 @@ public class GhidraMCPPluginTest extends TestCase {
     public void testEndpointIntegration() throws Exception {
         if (!serverAvailable) return;
         // Get function list
-        HttpResponse<String> functionsResponse = makeGetRequest("methods?limit=1");
+        HttpResponse<String> functionsResponse = makeGetRequest("find_functions?limit=1");
         assertEquals("Should get functions list", 200, functionsResponse.statusCode());
 
         // Get segments
-        HttpResponse<String> segmentsResponse = makeGetRequest("segments");
+        HttpResponse<String> segmentsResponse = makeGetRequest("list_program_items?kind=segments");
         assertEquals("Should get segments list", 200, segmentsResponse.statusCode());
 
         // Get UI cursor
@@ -396,17 +384,17 @@ public class GhidraMCPPluginTest extends TestCase {
         if (!serverAvailable) return;
         String[] allExpectedEndpoints = {
             // Basic listings
-            "list_functions", "methods", "classes", "segments", "imports", "exports",
-            "namespaces", "data", "strings",
+            "find_functions", "find_functions", "list_program_items?kind=classes", "list_program_items?kind=segments", "list_program_items?kind=imports", "list_program_items?kind=exports",
+            "list_program_items?kind=namespaces", "list_program_items?kind=data_items", "list_strings",
             // Search and analysis
-            "searchFunctions", "decompile", "get_functions", "disassemble_function",
+            "find_functions", "get_functions?function=main", "get_functions", "disassemble_function",
             // Cross-references
-            "xrefs_to", "xrefs_from", "function_xrefs",
+            "get_xrefs_to", "get_xrefs_from", "get_functions?function=main&fields=callers,callees",
             // Current state
             "get_ui_cursor",
             // Advanced features (may be missing)
-            "all_labels", "program_stats", "find_byte_patterns", "function_callgraph",
-            "search_labels", "string_references"
+            "list_globals", "get_metadata", "search_byte_patterns", "analyze_call_graph",
+            "list_globals", "list_strings"
         };
 
         int workingEndpoints = 0;
@@ -416,7 +404,7 @@ public class GhidraMCPPluginTest extends TestCase {
 
         for (String endpoint : allExpectedEndpoints) {
             try {
-                HttpResponse<String> response = makeGetRequest(endpoint + "?limit=1");
+                HttpResponse<String> response = makeGetRequest(endpoint + (endpoint.contains("?") ? "&" : "?") + "limit=1");
                 if (response.statusCode() == 200) {
                     System.out.println("✓ " + endpoint);
                     workingEndpoints++;
@@ -434,7 +422,7 @@ public class GhidraMCPPluginTest extends TestCase {
         System.out.println("\nCoverage: " + workingEndpoints + "/" + totalEndpoints +
                           " (" + String.format("%.1f", coveragePercent) + "%)");
 
-        // Require at least 70% coverage for the test to pass
-        assertTrue("Endpoint coverage should be at least 70%", coveragePercent >= 70.0);
+        // Every current route fixture must respond.
+        assertTrue("All current endpoint fixtures should be accessible", workingEndpoints == totalEndpoints);
     }
 }

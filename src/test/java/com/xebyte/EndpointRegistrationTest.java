@@ -30,6 +30,7 @@ public class EndpointRegistrationTest extends TestCase {
             .build();
         if (!liveCheckDone) {
             liveServerAvailable = liveTestsEnabled() && checkServerAvailability();
+            if (liveTestsEnabled()) assertTrue("Requested live server is unavailable", liveServerAvailable);
             liveCheckDone = true;
             if (!liveServerAvailable) {
                 System.out.println("Skipping live endpoint registration tests. Set GHIDRA_MCP_LIVE_TESTS=1 with a current server on " + BASE_URL + " to enable.");
@@ -87,15 +88,15 @@ public class EndpointRegistrationTest extends TestCase {
     public void testBasicEndpointsRegistered() {
         if (!shouldRunLiveTest()) return;
         Map<String, String> basicEndpoints = new HashMap<>();
-        basicEndpoints.put("list_functions", "List all functions");
-        basicEndpoints.put("methods", "List function names");
-        basicEndpoints.put("classes", "List classes/namespaces");
-        basicEndpoints.put("segments", "List memory segments");
-        basicEndpoints.put("imports", "List imported symbols");
-        basicEndpoints.put("exports", "List exported symbols");
-        basicEndpoints.put("namespaces", "List namespaces");
-        basicEndpoints.put("data", "List data items");
-        basicEndpoints.put("strings", "List strings");
+        basicEndpoints.put("find_functions", "List all functions");
+        basicEndpoints.put("find_functions", "List function names");
+        basicEndpoints.put("list_program_items?kind=classes", "List classes/namespaces");
+        basicEndpoints.put("list_program_items?kind=segments", "List memory segments");
+        basicEndpoints.put("list_program_items?kind=imports", "List imported symbols");
+        basicEndpoints.put("list_program_items?kind=exports", "List exported symbols");
+        basicEndpoints.put("list_program_items?kind=namespaces", "List namespaces");
+        basicEndpoints.put("list_program_items?kind=data_items", "List data items");
+        basicEndpoints.put("list_strings", "List strings");
 
         for (Map.Entry<String, String> entry : basicEndpoints.entrySet()) {
             assertTrue("Endpoint '" + entry.getKey() + "' (" + entry.getValue() + ") should be registered",
@@ -109,8 +110,8 @@ public class EndpointRegistrationTest extends TestCase {
     public void testSearchAnalysisEndpointsRegistered() {
         if (!shouldRunLiveTest()) return;
         Map<String, String> searchEndpoints = new HashMap<>();
-        searchEndpoints.put("searchFunctions", "Search functions by name");
-        searchEndpoints.put("decompile", "Decompile function");
+        searchEndpoints.put("find_functions", "Search functions by name");
+        searchEndpoints.put("get_functions?function=main", "Decompile function");
         searchEndpoints.put("get_functions", "Get function(s) by name or address");
         searchEndpoints.put("disassemble_function", "Disassemble function");
 
@@ -126,9 +127,9 @@ public class EndpointRegistrationTest extends TestCase {
     public void testCrossReferenceEndpointsRegistered() {
         if (!shouldRunLiveTest()) return;
         Map<String, String> xrefEndpoints = new HashMap<>();
-        xrefEndpoints.put("xrefs_to", "Get references to address");
-        xrefEndpoints.put("xrefs_from", "Get references from address");
-        xrefEndpoints.put("function_xrefs", "Get function cross-references");
+        xrefEndpoints.put("get_xrefs_to", "Get references to address");
+        xrefEndpoints.put("get_xrefs_from", "Get references from address");
+        xrefEndpoints.put("get_functions?function=main&fields=callers,callees", "Get function cross-references");
 
         for (Map.Entry<String, String> entry : xrefEndpoints.entrySet()) {
             assertTrue("Cross-reference endpoint '" + entry.getKey() + "' (" + entry.getValue() + ") should be registered",
@@ -157,12 +158,12 @@ public class EndpointRegistrationTest extends TestCase {
     public void testAdvancedEndpointsRegistration() {
         if (!shouldRunLiveTest()) return;
         Map<String, String> advancedEndpoints = new HashMap<>();
-        advancedEndpoints.put("all_labels", "List all labels");
-        advancedEndpoints.put("program_stats", "Get program statistics");
-        advancedEndpoints.put("find_byte_patterns", "Find byte patterns");
-        advancedEndpoints.put("function_callgraph", "Get function call graph");
-        advancedEndpoints.put("search_labels", "Search labels");
-        advancedEndpoints.put("string_references", "Get string references");
+        advancedEndpoints.put("list_globals", "List all labels");
+        advancedEndpoints.put("get_metadata", "Get program statistics");
+        advancedEndpoints.put("search_byte_patterns", "Find byte patterns");
+        advancedEndpoints.put("analyze_call_graph", "Get function call graph");
+        advancedEndpoints.put("list_globals", "Search labels");
+        advancedEndpoints.put("list_strings", "Get string references");
 
         int registeredCount = 0;
         int totalCount = advancedEndpoints.size();
@@ -207,7 +208,7 @@ public class EndpointRegistrationTest extends TestCase {
 
         // Test that registered endpoints don't return 404
         assertTrue("Basic endpoint should not return 404",
-            isEndpointRegistered("methods"));
+            isEndpointRegistered("find_functions"));
     }
 
     /**
@@ -219,17 +220,17 @@ public class EndpointRegistrationTest extends TestCase {
         // These are the endpoints that have createContext() calls in the Java source
         String[] sourceEndpoints = {
             // From startServer() method in GhidraMCPPlugin.java
-            "list_functions", "methods", "classes", "segments", "imports", "exports",
-            "namespaces", "data", "strings", "searchFunctions", "decompile",
-            "renameFunction", "renameData", "xrefs_to", "xrefs_from", "function_xrefs",
-            "function_labels", "get_functions", "get_ui_cursor",
+            "find_functions", "find_functions", "list_program_items?kind=classes", "list_program_items?kind=segments", "list_program_items?kind=imports", "list_program_items?kind=exports",
+            "list_program_items?kind=namespaces", "list_program_items?kind=data_items", "list_strings", "find_functions", "get_functions?function=main",
+            "rename_function", "rename_symbol", "get_xrefs_to", "get_xrefs_from", "get_functions?function=main&fields=callers,callees",
+            "get_functions?function=main&fields=labels", "get_functions", "get_ui_cursor",
             "disassemble_function", "set_comment",
             "rename_function", "set_function_prototype",
             "set_variable_type",
 
             // Advanced endpoints that should be in the source
-            "find_byte_patterns", "program_stats", "create_label", "all_labels",
-            "labels_at_address", "search_labels"
+            "search_byte_patterns", "get_metadata", "create_label", "list_globals",
+            "get_functions?function=main&fields=labels", "list_globals"
         };
 
         int registeredFromSource = 0;
@@ -251,8 +252,8 @@ public class EndpointRegistrationTest extends TestCase {
                           " (" + String.format("%.1f", consistencyRate) + "%)");
 
         // We expect high consistency between source and registered endpoints
-        assertTrue("At least 80% of source-defined endpoints should be registered",
-            consistencyRate >= 80.0);
+        assertTrue("All source-defined endpoint fixtures should be registered",
+            registeredFromSource == totalFromSource);
     }
 
     /**
@@ -264,7 +265,7 @@ public class EndpointRegistrationTest extends TestCase {
         boolean serverResponding = false;
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/methods"))
+                .uri(URI.create(BASE_URL + "/check_connection"))
                 .timeout(Duration.ofSeconds(2))
                 .GET()
                 .build();

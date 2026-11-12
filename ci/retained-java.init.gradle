@@ -1,0 +1,12 @@
+allprojects {
+    afterEvaluate {
+        java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+        configurations.testImplementation.dependencies.clear()
+        dependencies.add('testImplementation', files(System.getenv('testJars').split(' ')))
+        tasks.withType(Test).configureEach {
+            maxParallelForks = 1
+            jvmArgs '-Djava.awt.headless=true'
+            environment 'GHIDRA_MCP_LIVE_TESTS', System.getenv('GHIDRA_MCP_LIVE_TESTS') ?: 'false'
+        }
+    }
+}
