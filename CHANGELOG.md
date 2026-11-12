@@ -4,6 +4,15 @@ Complete version history for the Ghidra MCP Server project.
 
 ---
 
+## Flakey packaging compatibility
+
+Ghidra 12.2 builds use the single-type `DataTypeManager.remove(DataType)`
+boolean API for deletion outcomes and the current SLEIGH language description
+package. The frozen upstream 7.0.0 application source and Python SDK policy
+otherwise remain unchanged. Native compilation and data-type deletion regression
+tests gate the fork's source PR; installation does not imply activation.
+
+
 ## v7.0.0 (unreleased) — major: tool consolidation, JSON response contract, MCP conformance suite, an offline test tier, and a release gate that can actually block
 
 **209 tools** — 205 served by the GUI plugin, 190 by the headless server, 186
