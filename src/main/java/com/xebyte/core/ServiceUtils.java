@@ -752,8 +752,9 @@ public final class ServiceUtils {
      * silently drop it.
      */
     private static String decoderOf(ghidra.program.model.lang.LanguageDescription d) {
-        if (d instanceof ghidra.program.model.lang.SleighLanguageDescription sld) {
-            generic.jar.ResourceFile sla = sld.getSlaFile();
+        if (d instanceof ghidra.app.plugin.processors.sleigh.SleighLanguageDescription sld) {
+            var languageFile = sld.getLanguageFile();
+            generic.jar.ResourceFile sla = languageFile == null ? null : languageFile.getSlaFile();
             if (sla != null) return sla.getAbsolutePath();
         }
         return d.getLanguageID().getIdAsString();
