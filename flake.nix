@@ -8,6 +8,7 @@
     pkgs = nixpkgs.legacyPackages.${system};
     testJars = pkgs.callPackage ./ci/java-test-dependencies.nix {};
   in {
+    packages.${system}.retained-java = self.checks.${system}.retained-java;
     checks.${system}.retained-java = pkgs.runCommand "ghidra-mcp-retained-java" {
       nativeBuildInputs = [ pkgs.jdk25 pkgs.gradle_9 pkgs.python3 pkgs.stdenv.cc ];
       inherit testJars;

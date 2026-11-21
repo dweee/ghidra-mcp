@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "upstream": "bethington/ghidra-mcp",
+  "branch": "dev",
+  "track": "branch",
+  "author": {
+    "name": "dave",
+    "email": "git@d.monke.fail"
+  },
+  "required_paths": [
+    "flake.nix",
+    "flake.lock",
+    ".github/upstream-workflows"
+  ],
+  "protected_paths": [
+    "flake.nix",
+    "flake.lock",
+    "nix/**",
+    "ci/**"
+  ],
+  "matrix": [
+    {
+      "system": "x86_64-linux",
+      "packages": [
+        "retained-java"
+      ],
+      "checks": [
+        "retained-java"
+      ],
+      "tests": []
+    }
+  ]
+}
