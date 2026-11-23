@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "upstream": "bethington/ghidra-mcp",
+  "branch": "8dbbb1f677166fe483d605f925d60da080e448f2",
   "track": "branch",
-  "branch": "19e64c75f1be1fcbe413e845f65e549f2361b928"
+  "upstream": "bethington/ghidra-mcp",
+  "version": 1
 }
