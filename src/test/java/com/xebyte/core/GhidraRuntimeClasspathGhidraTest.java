@@ -55,6 +55,7 @@ public class GhidraRuntimeClasspathGhidraTest {
         { "org.apache.commons.lang3.ArrayUtils", "db.TableRecord" },
         { "org.apache.commons.io.FilenameUtils", "ghidra.app.plugin.processors.sleigh.SleighLanguageFile" },
         { "org.apache.commons.collections4.IteratorUtils", "Ghidra listing iteration" },
+        { "org.apache.commons.io.FilenameUtils", "ghidra.util.classfinder.ClassSearcher" },
         { "org.antlr.runtime.RecognitionException",
           "ghidra.app.plugin.processors.sleigh.SleighLanguageProvider" },
         { "org.iso_relax.verifier.VerifierFactory", "SLEIGH language-definition XML validation" },
