@@ -5,6 +5,8 @@ allprojects {
         dependencies.add('testImplementation', files(System.getenv('testJars').split(' ')))
         tasks.withType(Test).configureEach {
             maxParallelForks = 1
+            // Gradle's 512 MiB default is too small for the 7.1.0 Ghidra integration tests.
+            maxHeapSize = '2g'
             jvmArgs '-Djava.awt.headless=true'
             environment 'GHIDRA_MCP_LIVE_TESTS', System.getenv('GHIDRA_MCP_LIVE_TESTS') ?: 'false'
         }
